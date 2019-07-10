@@ -19,7 +19,6 @@ pub mod utils {
             };
         }
     }
-
     pub struct Color {
         pub red: f32,
         pub green: f32,
@@ -40,14 +39,14 @@ pub mod utils {
     }
     impl Sphere {
         pub fn is_intersect(&self, ray: Ray) -> bool {
-            let v = Vector3D::a2b_vec(self.center.clone(), ray.origin);
-            let cos_theta = dot_3d(&v, &ray.direction.unit_vec());
+            let v = Vector3D::a2b_vec(ray.origin, self.center.clone());
+            let cos_theta = dot_3d(&v.unit_vec(), &ray.direction.unit_vec());
             let d = v.length() * (1. - cos_theta.powi(2)).sqrt();
             if d > self.radius {
-                return true;
+                return false;
             }
             else {
-                return false;
+                return true;
             }
         }
     }
