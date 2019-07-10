@@ -6,7 +6,7 @@ pub mod utils {
         pub z: f64,
     }
     impl Vector3D {
-        fn a2b_vec(a: Point, b: Point) -> Vector3D {
+        fn a2b_vec(a: &Point, b: &Point) -> Vector3D {
             return Vector3D { x: b.x - a.x, y: b.y - a.y, z: b.z - a.z, };
         }
         fn length(&self) -> f64 {
@@ -39,7 +39,7 @@ pub mod utils {
     }
     impl Sphere {
         pub fn is_intersect(&self, ray: Ray) -> bool {
-            let v = Vector3D::a2b_vec(ray.origin, self.center.clone());
+            let v = Vector3D::a2b_vec(&ray.origin, &self.center.clone());
             let cos_theta = dot_3d(&v.unit_vec(), &ray.direction.unit_vec());
             let d = v.length() * (1. - cos_theta.powi(2)).sqrt();
             if d > self.radius {
@@ -68,11 +68,16 @@ pub mod utils {
         pub fn prime_ray_on_sensor(x: u32, y: u32, scene: &Scene) -> Ray {
             // Geometry correction for sensor origin coordinate
             // linear scale to -1. ~ 1.
-            let sensor_x: f64 = ((x as f64 + 0.5) / scene.width as f64) * 2. - 1.;
-            let sensor_y: f64 = 1.0 - ((y as f64 + 0.5) / scene.height as f64) * 2.0;
+            let fov_adjustment = (scene.fov.to_radians() / 2.0).tan();
+            let aspect_ratio = (scene.width as f64) / (scene.height as f64);
+            let ctr = Point {
+                x: (((x as f64 + 0.5) / scene.width as f64) * 2. - 1.) * aspect_ratio * fov_adjustment,
+                y: (1.0 - ((y as f64 + 0.5) / scene.height as f64) * 2.0) * fov_adjustment,
+                z: -1.
+            };
             return Ray {
                 origin: scene.camera_pos.clone(),
-                direction: Vector3D { x: sensor_x, y: sensor_y, z: -1., }
+                direction: Vector3D::a2b_vec(&scene.camera_pos, &ctr),
             };
         }
     }

@@ -13,7 +13,6 @@ fn render(scene: &Scene) -> image::DynamicImage {
             let ray = Ray::prime_ray_on_sensor(x, y, scene);
             if scene.sphere.is_intersect(ray) {
                 img.put_pixel(x, y, p);
-                println!("{}", x);
             }
         }
     }
