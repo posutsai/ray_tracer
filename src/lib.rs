@@ -1,4 +1,7 @@
+extern crate image;
 pub mod utils {
+    use image::{Pixel, GenericImage};
+
     #[derive(Clone)]
     pub struct Vector3D {
         pub x: f64,
@@ -19,10 +22,21 @@ pub mod utils {
             };
         }
     }
+    #[derive(Clone)]
     pub struct Color {
         pub red: f32,
         pub green: f32,
         pub blue: f32,
+    }
+    impl Color {
+        pub fn to_rgba(&self) -> image::Rgba<u8> {
+            return image::Rgba::from_channels(
+                (self.red * 255.0) as u8,
+                (self.green * 255.0) as u8,
+                (self.blue * 255.0) as u8,
+                255,
+            );
+        }
     }
 
     #[derive(Clone)]
@@ -49,6 +63,20 @@ pub mod utils {
                 return true;
             }
         }
+        pub fn cal_intersect_distance(&self, ray: &Ray) -> (bool, Option<f64>) {
+            // This function is responsible for computing whether the ray intersect the object or
+            // not and the distance between origin of the ray and the intersection.
+            let v = Vector3D::a2b_vec(&ray.origin, &self.center.clone());
+            let cos_theta = dot_3d(&v.unit_vec(), &ray.direction.unit_vec());
+            let d = v.length() * (1. - cos_theta.powi(2)).sqrt();
+            if d > self.radius {
+                return (false, None);
+            }
+            else {
+                let intersect = v.length() * cos_theta - (self.radius.powi(2) - d.powi(2)).sqrt();
+                return (true, Some(intersect));
+            }
+        }
     }
 
     pub struct Scene {
@@ -56,8 +84,25 @@ pub mod utils {
         pub height: u32,
         // fov stands for "field of view"
         pub fov: f64,
-        pub sphere: Sphere,
+        pub spheres: Vec<Sphere>,
         pub camera_pos: Point,
+    }
+    impl Scene {
+        pub fn interact_spheres(&self, ray: Ray) -> Color {
+            let sphere_iter = self.spheres.iter();
+            let mut pixel = Color {red: 0., green: 0., blue: 0.};
+            let mut min_dist = std::f64::MAX;
+            let mut is_hit = false;
+            for s in sphere_iter {
+                let (is_intersect, dist) = s.cal_intersect_distance(&ray);
+                if is_intersect == true && dist.unwrap() < min_dist {
+                    is_hit = true;
+                    pixel = s.color.clone();
+                    min_dist = dist.unwrap();
+                }
+            }
+            return pixel;
+        }
     }
 
     pub struct Ray {
