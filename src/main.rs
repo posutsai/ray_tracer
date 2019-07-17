@@ -33,33 +33,33 @@ fn main() {
                 center: Point {x: 0., y: 0.5, z: -4.},
                 radius: 1.,
                 color: Color {red: 0.4, green: 1.0, blue: 0.4},
-                albedo: 0.55,
+                albedo: 0.2,
             }),
             Box::new(Sphere {
                 center: Point {x: 1.5, y: 2., z: -5.},
                 radius: 1.5,
                 color: Color {red: 0.8, green: 0.2, blue: 0.7},
-                albedo: 0.95,
+                albedo: 0.35,
             }),
             Box::new(Sphere {
-                center: Point {x: -5.5, y: 3.7, z: -8.},
-                radius: 3.,
-                color: Color {red: 0.2, green: 1., blue: 0.7},
-                albedo: 0.95,
+                center: Point {x: -2.5, y: 3.7, z: -8.},
+                radius: 2.,
+                color: Color {red: 0.2, green: 0.01, blue: 0.05},
+                albedo: 0.9,
             }),
             Box::new(Plane {
                 normal: Vector3D {x: 0., y: 1.0, z: 0.},
-                pt: Point {x: 0., y: -20., z: 0.},
-                color: Color {red:0.1, green: 0.3, blue: 1.},
-                albedo: 0.95,
+                pt: Point {x: 0., y: -5., z: 0.},
+                color: Color {red:0.95, green: 1., blue: 1.},
+                albedo: 0.8,
             })
 
         ],
         lights: vec![
             LightSrc {
-                direction: Vector3D {x: 10., y: 10., z: -1.},
+                direction: Vector3D {x: 5., y: -5., z: -5.},
                 color: Color {red: 1., green: 1., blue: 1.},
-                intensity: 1.,
+                intensity: 10.,
             }
         ],
         camera_pos: Point {x: 0., y: 0., z: 0.},

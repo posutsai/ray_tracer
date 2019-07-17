@@ -15,6 +15,13 @@ pub mod utils {
         fn length(&self) -> f64 {
             return (self.x * self.x + self.y * self.y + self.z * self.z).sqrt();
         }
+        fn inverse(&self) -> Vector3D {
+            return Vector3D {
+                x: self.x * (-1.),
+                y: self.y * (-1.),
+                z: self.z * (-1.),
+            }
+        }
         fn unit_vec(&self) -> Vector3D {
             let len = self.length();
             return Vector3D {
@@ -176,9 +183,11 @@ pub mod utils {
                 let normal = self.spheres[hit_index].normal2intersection(&ray);
                 let mut factor: f32 = 0.;
                 for l in self.lights.iter() {
-                    let power = (dot_3d(&l.direction.unit_vec(), &normal.unit_vec()) as f32) * l.intensity * (-1.);
+                    let power = (dot_3d(&l.direction.unit_vec().inverse(), &normal.unit_vec()) as f32).max(0.) * l.intensity;
                     let reflection = self.spheres[hit_index].get_albedo() /  std::f32::consts::PI;
                     factor += power * reflection;
+                }
+                if hit_index > 3 {
                 }
                 return Color {
                     red: pixel.red * factor,
