@@ -48,12 +48,15 @@ pub mod utils {
     pub trait Object {
         fn is_intersect(&self, ray: &Ray) -> bool;
         fn cal_intersect_distance(&self, ray: &Ray) -> (bool, Option<f64>, Option<Color>);
+        fn normal2intersection(&self, ray: &Ray) -> Vector3D;
+        fn get_albedo(&self) -> f32;
     }
 
     pub struct Sphere {
         pub center: Point,
         pub radius: f64,
         pub color: Color,
+        pub albedo: f32,
     }
     impl Object for Sphere {
          fn is_intersect(&self, ray: &Ray) -> bool {
@@ -81,11 +84,24 @@ pub mod utils {
                 return (true, Some(intersect), Some(self.color.clone()));
             }
         }
+        fn normal2intersection(&self, ray: &Ray) -> Vector3D {
+            let (is_intersect, dist, c) = self.cal_intersect_distance(&ray);
+            let unit = dist.unwrap() / ray.direction.length();
+            return Vector3D::a2b_vec(&self.center, &Point {
+                x: ray.origin.x + unit * ray.direction.x,
+                y: ray.origin.y + unit * ray.direction.y,
+                z: ray.origin.z + unit * ray.direction.z,
+            });
+        }
+        fn get_albedo(&self) -> f32 {
+            return self.albedo.clone()
+        }
     }
     pub struct Plane {
         pub normal: Vector3D,
         pub pt: Point,
         pub color: Color,
+        pub albedo: f32,
     }
     impl Object for Plane {
         fn is_intersect(&self, ray: &Ray) -> bool {
@@ -118,14 +134,26 @@ pub mod utils {
                 return (false, None, None);
             }
         }
+        fn normal2intersection(&self, ray: &Ray) -> Vector3D {
+            return self.normal.clone();
+        }
+        fn get_albedo(&self) -> f32 {
+            return self.albedo.clone();
+        }
     }
 
+    pub struct LightSrc {
+        pub direction: Vector3D,
+        pub color: Color,
+        pub intensity: f32,
+    }
     pub struct Scene {
         pub width: u32,
         pub height: u32,
         // fov stands for "field of view"
         pub fov: f64,
         pub spheres: Vec<Box<dyn Object>>,
+        pub lights: Vec<LightSrc>,
         pub camera_pos: Point,
     }
     impl Scene {
@@ -133,16 +161,33 @@ pub mod utils {
             let sphere_iter = self.spheres.iter();
             let mut pixel = Color {red: 0., green: 0., blue: 0.};
             let mut min_dist = std::f64::MAX;
+            let mut hit_index: usize = 0;
             let mut is_hit = false;
-            for s in sphere_iter {
+            for (i, s) in self.spheres.iter().enumerate() {
                 let (is_intersect, dist, c) = s.cal_intersect_distance(&ray);
                 if is_intersect == true && dist.unwrap() < min_dist {
                     is_hit = true;
+                    hit_index = i;
                     pixel = c.unwrap();
                     min_dist = dist.unwrap();
                 }
             }
-            return pixel;
+            if is_hit {
+                let normal = self.spheres[hit_index].normal2intersection(&ray);
+                let mut factor: f32 = 0.;
+                for l in self.lights.iter() {
+                    let power = (dot_3d(&l.direction.unit_vec(), &normal.unit_vec()) as f32) * l.intensity * (-1.);
+                    let reflection = self.spheres[hit_index].get_albedo() /  std::f32::consts::PI;
+                    factor += power * reflection;
+                }
+                return Color {
+                    red: pixel.red * factor,
+                    green: pixel.green * factor,
+                    blue: pixel.blue * factor,
+                };
+            } else {
+                return pixel;
+            }
         }
     }
 

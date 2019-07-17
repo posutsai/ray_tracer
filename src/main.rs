@@ -4,7 +4,7 @@ use image::GenericImage;
 use std::fs::File;
 use std::path::Path;
 use std::mem;
-use ray_tracer::utils::{Color, Point, Sphere, Scene, Vector3D, Ray, Plane};
+use ray_tracer::utils::{Color, Point, Sphere, Scene, Vector3D, Ray, Plane, LightSrc};
 
 fn render(scene: &Scene) -> image::DynamicImage {
     let mut img = image::DynamicImage::new_rgb8(scene.width, scene.height);
@@ -33,23 +33,34 @@ fn main() {
                 center: Point {x: 0., y: 0.5, z: -4.},
                 radius: 1.,
                 color: Color {red: 0.4, green: 1.0, blue: 0.4},
+                albedo: 0.55,
             }),
             Box::new(Sphere {
                 center: Point {x: 1.5, y: 2., z: -5.},
                 radius: 1.5,
                 color: Color {red: 0.8, green: 0.2, blue: 0.7},
+                albedo: 0.95,
             }),
             Box::new(Sphere {
                 center: Point {x: -5.5, y: 3.7, z: -8.},
                 radius: 3.,
                 color: Color {red: 0.2, green: 1., blue: 0.7},
+                albedo: 0.95,
             }),
             Box::new(Plane {
                 normal: Vector3D {x: 0., y: 1.0, z: 0.},
                 pt: Point {x: 0., y: -20., z: 0.},
-                color: Color {red:1., green: 1., blue: 1.},
+                color: Color {red:0.1, green: 0.3, blue: 1.},
+                albedo: 0.95,
             })
 
+        ],
+        lights: vec![
+            LightSrc {
+                direction: Vector3D {x: 10., y: 10., z: -1.},
+                color: Color {red: 1., green: 1., blue: 1.},
+                intensity: 1.,
+            }
         ],
         camera_pos: Point {x: 0., y: 0., z: 0.},
     };
