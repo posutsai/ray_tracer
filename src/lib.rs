@@ -45,14 +45,18 @@ pub mod utils {
         pub y: f64,
         pub z: f64,
     }
+    pub trait Object {
+        fn is_intersect(&self, ray: &Ray) -> bool;
+        fn cal_intersect_distance(&self, ray: &Ray) -> (bool, Option<f64>, Option<Color>);
+    }
 
     pub struct Sphere {
         pub center: Point,
         pub radius: f64,
         pub color: Color,
     }
-    impl Sphere {
-        pub fn is_intersect(&self, ray: Ray) -> bool {
+    impl Object for Sphere {
+         fn is_intersect(&self, ray: &Ray) -> bool {
             let v = Vector3D::a2b_vec(&ray.origin, &self.center.clone());
             let cos_theta = dot_3d(&v.unit_vec(), &ray.direction.unit_vec());
             let d = v.length() * (1. - cos_theta.powi(2)).sqrt();
@@ -63,18 +67,55 @@ pub mod utils {
                 return true;
             }
         }
-        pub fn cal_intersect_distance(&self, ray: &Ray) -> (bool, Option<f64>) {
+        fn cal_intersect_distance(&self, ray: &Ray) -> (bool, Option<f64>, Option<Color>) {
             // This function is responsible for computing whether the ray intersect the object or
             // not and the distance between origin of the ray and the intersection.
             let v = Vector3D::a2b_vec(&ray.origin, &self.center.clone());
             let cos_theta = dot_3d(&v.unit_vec(), &ray.direction.unit_vec());
             let d = v.length() * (1. - cos_theta.powi(2)).sqrt();
             if d > self.radius {
-                return (false, None);
+                return (false, None, None);
             }
             else {
                 let intersect = v.length() * cos_theta - (self.radius.powi(2) - d.powi(2)).sqrt();
-                return (true, Some(intersect));
+                return (true, Some(intersect), Some(self.color.clone()));
+            }
+        }
+    }
+    pub struct Plane {
+        pub normal: Vector3D,
+        pub pt: Point,
+        pub color: Color,
+    }
+    impl Object for Plane {
+        fn is_intersect(&self, ray: &Ray) -> bool {
+            let denom = dot_3d(&ray.direction, &self.normal);
+            let v = Vector3D {
+                x: self.pt.x - ray.origin.x,
+                y: self.pt.y - ray.origin.y,
+                z: self.pt.z - ray.origin.z,
+            };
+            let numer = dot_3d(&v, &self.normal);
+            if numer / denom > 0. {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        fn cal_intersect_distance(&self, ray: &Ray) -> (bool, Option<f64>, Option<Color>) {
+            let c = -(self.normal.x * self.pt.x + self.normal.y * self.pt.y + self.normal.z * self.pt.z);
+            if self.is_intersect(ray) {
+                let d = (self.normal.x * ray.origin.x + self.normal.y * ray.origin.y + self.normal.z * ray.origin.z + c).abs()
+                     / (self.normal.x.powi(2) + self.normal.y.powi(2) + self.normal.z.powi(2)).sqrt();
+                let l = d / dot_3d(&self.normal.unit_vec(), &ray.direction.unit_vec()).abs();
+                if l > 1e-6 {
+                    return (true, Some(l * 100.), Some(self.color.clone()));
+                } else {
+                    return (false, None, None);
+                }
+            } else {
+                return (false, None, None);
             }
         }
     }
@@ -84,7 +125,7 @@ pub mod utils {
         pub height: u32,
         // fov stands for "field of view"
         pub fov: f64,
-        pub spheres: Vec<Sphere>,
+        pub spheres: Vec<Box<dyn Object>>,
         pub camera_pos: Point,
     }
     impl Scene {
@@ -94,10 +135,10 @@ pub mod utils {
             let mut min_dist = std::f64::MAX;
             let mut is_hit = false;
             for s in sphere_iter {
-                let (is_intersect, dist) = s.cal_intersect_distance(&ray);
+                let (is_intersect, dist, c) = s.cal_intersect_distance(&ray);
                 if is_intersect == true && dist.unwrap() < min_dist {
                     is_hit = true;
-                    pixel = s.color.clone();
+                    pixel = c.unwrap();
                     min_dist = dist.unwrap();
                 }
             }
