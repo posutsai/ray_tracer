@@ -56,6 +56,7 @@ pub mod utils {
         fn is_intersect(&self, ray: &Ray) -> bool;
         fn cal_intersect_distance(&self, ray: &Ray) -> (bool, Option<f64>, Option<Color>);
         fn normal2intersection(&self, ray: &Ray) -> Vector3D;
+        fn get_intersection_point(&self, ray: &Ray) -> Point;
         fn get_albedo(&self) -> f32;
     }
 
@@ -100,6 +101,15 @@ pub mod utils {
                 z: ray.origin.z + unit * ray.direction.z,
             });
         }
+        fn get_intersection_point(&self, ray: &Ray) -> Point {
+            let (is_intersect, dist, c) = self.cal_intersect_distance(&ray);
+            let unit = dist.unwrap() / ray.direction.length();
+            return Point {
+                x: ray.origin.x + unit * ray.direction.x + 1e-4,
+                y: ray.origin.y + unit * ray.direction.y + 1e-4,
+                z: ray.origin.z + unit * ray.direction.z + 1e-4,
+            };
+        }
         fn get_albedo(&self) -> f32 {
             return self.albedo.clone()
         }
@@ -132,14 +142,22 @@ pub mod utils {
                 let d = (self.normal.x * ray.origin.x + self.normal.y * ray.origin.y + self.normal.z * ray.origin.z + c).abs()
                      / (self.normal.x.powi(2) + self.normal.y.powi(2) + self.normal.z.powi(2)).sqrt();
                 let l = d / dot_3d(&self.normal.unit_vec(), &ray.direction.unit_vec()).abs();
-                if l > 1e-6 {
-                    return (true, Some(l * 100.), Some(self.color.clone()));
-                } else {
-                    return (false, None, None);
-                }
+                return (true, Some(l), Some(self.color.clone()));
             } else {
                 return (false, None, None);
             }
+        }
+        fn get_intersection_point(&self, ray: &Ray) -> Point {
+            let c = -(self.normal.x * self.pt.x + self.normal.y * self.pt.y + self.normal.z * self.pt.z);
+            let d = (self.normal.x * ray.origin.x + self.normal.y * ray.origin.y + self.normal.z * ray.origin.z + c).abs()
+                 / (self.normal.x.powi(2) + self.normal.y.powi(2) + self.normal.z.powi(2)).sqrt();
+            let l = d / dot_3d(&self.normal.unit_vec(), &ray.direction.unit_vec()).abs();
+            let unit = l / ray.direction.length();
+            return Point {
+                x: ray.origin.x + unit * ray.direction.x + 1e-4,
+                y: ray.origin.y + unit * ray.direction.y + 1e-4,
+                z: ray.origin.z + unit * ray.direction.z + 1e-4,
+            };
         }
         fn normal2intersection(&self, ray: &Ray) -> Vector3D {
             return self.normal.clone();
@@ -180,14 +198,33 @@ pub mod utils {
                 }
             }
             if is_hit {
+                let intersect_pt = self.spheres[hit_index].get_intersection_point(&ray);
+                for (i, l) in self.lights.iter().enumerate() {
+                    let exposeRay = Ray {
+                        origin: intersect_pt.clone(),
+                        direction: Vector3D {
+                            x: l.direction.x * (-1.),
+                            y: l.direction.y * (-1.),
+                            z: l.direction.z * (-1.),
+                        },
+                    };
+                    for (j, s) in self.spheres.iter().enumerate() {
+                        let (is_intersect, dist, c) = s.cal_intersect_distance(&exposeRay);
+                        if is_intersect == true && j != hit_index {
+                            return Color {
+                                red: 0.,
+                                green: 0.,
+                                blue: 0.,
+                            };
+                        }
+                    }
+                }
                 let normal = self.spheres[hit_index].normal2intersection(&ray);
                 let mut factor: f32 = 0.;
                 for l in self.lights.iter() {
                     let power = (dot_3d(&l.direction.unit_vec().inverse(), &normal.unit_vec()) as f32).max(0.) * l.intensity;
                     let reflection = self.spheres[hit_index].get_albedo() /  std::f32::consts::PI;
                     factor += power * reflection;
-                }
-                if hit_index > 3 {
                 }
                 return Color {
                     red: pixel.red * factor,

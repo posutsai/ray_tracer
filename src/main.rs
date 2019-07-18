@@ -25,8 +25,8 @@ fn render(scene: &Scene) -> image::DynamicImage {
 
 fn main() {
     let scene = Scene {
-        width: 800,
-        height: 600,
+        width: 1920,
+        height: 1080,
         fov: 90.0,
         spheres: vec![
             Box::new(Sphere {
@@ -49,7 +49,7 @@ fn main() {
             }),
             Box::new(Plane {
                 normal: Vector3D {x: 0., y: 1.0, z: 0.},
-                pt: Point {x: 0., y: -5., z: 0.},
+                pt: Point {x: 0., y: -1.2, z: 0.},
                 color: Color {red:0.95, green: 1., blue: 1.},
                 albedo: 0.8,
             })
@@ -57,9 +57,9 @@ fn main() {
         ],
         lights: vec![
             LightSrc {
-                direction: Vector3D {x: 5., y: -5., z: -5.},
+                direction: Vector3D {x: 3., y: -3., z: -5.},
                 color: Color {red: 1., green: 1., blue: 1.},
-                intensity: 10.,
+                intensity: 11.,
             }
         ],
         camera_pos: Point {x: 0., y: 0., z: 0.},
